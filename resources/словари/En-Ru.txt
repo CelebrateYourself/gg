@@ -1,0 +1,11 @@
+bear - медведь
+butterfly - бабочка
+cat - кошка
+dog - собака
+elephant - слон
+fish - рыба
+fly - муха
+fox - лиса
+horse - лошадь
+mouse - мышь
+turtle - черепаха
