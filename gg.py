@@ -13,7 +13,7 @@ from view import View
 class GallowsGame:
 
     info = 'Start programm text'
-    chars_limit = 40
+    chars_limit = 50
 
     def __init__(self):
         self.modes = {

@@ -1,6 +1,7 @@
 
 import abc
 import os
+import random
 
 
 modes = []
@@ -66,6 +67,15 @@ class Mode(abc.ABC):
 
 @mode
 class DictMode(Mode):
+
+    # a sound card, audio card | комментарий = 
+    #     звуковая карта | комментарий
+    #
+    # Количество вариантов вопроса и ответа могут не совпадать.
+    # Вопрос выбирается произвольно, ответ сравнивается со всеми
+    # доступными.
+    _RESOURCE_PATTERN = 'q1, ... qn | comment = a1, ... am | comment'
+
     name = 'Словари'
     info = 'Напишите перевод слова:'
     settings = {}
@@ -73,14 +83,19 @@ class DictMode(Mode):
     def on_answer(self, answer_text):
         current_question = self.question
         true_answer = self.qa_dict[current_question]
-        if answer_text != true_answer:
+        if answer_text not in true_answer:
             self.bad_answers[current_question] = answer_text
         try:
             self.question = next(self.questions_i)
         except StopIteration:
             bad_answers = ''
             for q,a in self.bad_answers.items():
-                bad_answers += '{} - {} -> {}\n'.format(q, a, self.qa_dict[q])
+                # ', '.join(...) because key:value - tuples
+                bad_answers += '{} - {} -> {}\n'.format(
+                    ', '.join(q), 
+                    a, 
+                    ', '.join(self.qa_dict[q])
+                )
             result_text = 'Результаты:\n{} из {}\n\n{}'.format(
                 self.length - len(self.bad_answers),
                 self.length,
@@ -90,13 +105,22 @@ class DictMode(Mode):
         else:
             self.display = self.pattern.format(
                 self.info,
-                self.question
+                # если формулировок вопроса несколько "монитор, дисплей"
+                random.choice(self.question)
             )
 
     def launch(self):
-        self.questions_i = iter(self.qa_dict.keys())
+        # При парсинге мы сохранили весь файл, здесь же
+        # выбирается некоторое количество произвольных
+        # позиций для тестирования. В дальнейшем, можно
+        # сохранять только выбранные пары.
+        TEST_LENGTH = 10
+        questions = random.sample(self.qa_dict.keys(), TEST_LENGTH)
+        random.shuffle(questions)
+    
+        self.questions_i = iter(questions)
         self.pattern = '{}\n\n-> {}'
-        self.length = len(self.qa_dict)
+        self.length = len(questions)
         self.bad_answers = {}
  
         try:
@@ -106,14 +130,33 @@ class DictMode(Mode):
         else:
             self.display = self.pattern.format(
                 self.info,
-                self.question
+                # если формулировок вопроса несколько "монитор, дисплей"
+                random.choice(self.question)
             )
 
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
         qa_dict = {}
-        with open(file_path, 'rt') as file:
+        with open(file_path, 'rt', encoding='utf8') as file:
             for string in file:
-                question, answer = string.replace('\n', '').split('-')
-                qa_dict[question.strip()] = answer.strip()
+                try:
+                    question, answer = string.replace('\n', '').split('=')
+                except Exception as e:
+                    continue
+                # remove additional info (comments)
+                question = question.split('|')[0]
+                answer = answer.split('|')[0]
+                # create a tuple of variables from string 
+                # like "alfa, beta, gamma"
+                # tuple is a hashable sequence, we use it for dict key
+                q_tuple = tuple(
+                    map(str.strip, question.split(','))
+                )
+                a_tuple = tuple(
+                    map(str.strip, answer.split(','))
+                )
+                
+                if q_tuple and a_tuple:
+                    qa_dict[q_tuple] = a_tuple
+
         self.qa_dict = qa_dict
