@@ -2,16 +2,13 @@
 import os
 import tkinter as tk
 
-# чтобы при создании списка режимов можно
-# было использовать их имена, а не названия файлов,
-# решил оставить как есть. В противном случае придется
-# подключать все файлы, чтобы узнать имена модов.
 from modes import modes
 from view import View
 
 
 class GallowsGame:
 
+    title = 'Gallows Game'
     info = 'Start programm text'
     chars_limit = 50
 
@@ -21,6 +18,8 @@ class GallowsGame:
         }
         self.current_task = None
         self.window = View(tk.Tk())
+        self.window.master.title(self.title)
+        self.window.master.resizable(False, False)
 
         self._set_init_state()
         self._bind_events()

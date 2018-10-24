@@ -7,7 +7,6 @@ class View(ttk.Frame):
 
     def __init__(self, root):
         super().__init__(root)
-        self.master.title('Gallows Game')
 
         self.widgets = {}
         self.display = tk.StringVar()
