@@ -1,3 +1,21 @@
+TEST_INFO = (
+'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed '
+'aliquam gravida augue, vel luctus risus accumsan in. Ut '
+'efficitur et lacus eget feugiat. Donec eu ipsum turpis. '
+'Praesent a diam sed lacus congue rhoncus sed eget nisi. '
+'Mauris tempor tempus lorem, ac luctus sem rutrum id. '
+'Duis auctor cursus fringilla. Sed interdum neque vitae '
+'tellus lacinia hendrerit. Duis est libero, pulvinar vitae '
+'hendrerit in, cursus a augue. Integer iaculis, nisi at '
+'bibendum facilisis, tellus elit aliquam mi, id volutpat sem '
+'lectus quis risus. Sed in dui id quam bibendum hendrerit. '
+'Sed efficitur erat et ultrices mattis. Ut ultricies dolor '
+'nec risus lobortis, sit amet varius est volutpat. Suspendisse '
+'sodales ligula efficitur commodo tincidunt. Sed dictum velit '
+'quis lectus elementum pretium. Integer scelerisque, urna in '
+'elementum luctus, urna massa molestie tellus, non molestie '
+'metus metus sit amet enim.'
+)
 
 import os
 import tkinter as tk
@@ -9,7 +27,7 @@ from view import View
 class GallowsGame:
 
     title = 'Gallows Game'
-    info = 'Start programm text'
+    info = TEST_INFO #'Start programm text'
     chars_limit = 50
 
     def __init__(self):
@@ -29,7 +47,7 @@ class GallowsGame:
         modes_combobox = self.window.widgets['modes']
         modes_combobox.config(values=modes_names)
 
-        self.window.display.set(self.info)
+        self.window.display = self.info
         self.window.launch()
 
     def _bind_events(self):
@@ -76,7 +94,7 @@ class GallowsGame:
 
         mode_name = window.selected_mode.get()
         mode_cls = self.modes[mode_name]
-        window.display.set(mode_cls.info)
+        window.display = mode_cls.info
         res_names = mode_cls.get_resources_names()
 
         resources_box = window.widgets['resources']
@@ -110,7 +128,8 @@ class GallowsGame:
         mode_cls = self.modes[mode_name]
 
         task = mode_cls(
-            display=self.window.display,
+            # Because display now is a property object in window
+            window=self.window,
             resource_name=resource_name,
             on_exit=self._show_results
         )
@@ -123,7 +142,7 @@ class GallowsGame:
         task.launch()
 
     def _show_results(self, result_text=''):
-        self.window.display.set(result_text)
+        self.window.display = result_text
 
         self.current_task = None
         input_ = self.window.widgets['input']

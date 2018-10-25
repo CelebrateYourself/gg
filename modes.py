@@ -16,18 +16,19 @@ class Mode(abc.ABC):
 
     info = 'Abstract mode text'
 
-    def __init__(self, *, display, resource_name, on_exit):
-        self._display = display
+    def __init__(self, *, window, resource_name, on_exit):
+        self._window = window
         self._on_exit = on_exit
         self._parse_resource(resource_name)
 
+    
     @property
     def display(self):
-        return self._display.get()
+        return self._window.display
 
     @display.setter
     def display(self, text):
-        self._display.set(text)
+        self._window.display = text
 
     @classmethod
     def get_name(cls):
@@ -91,7 +92,7 @@ class DictMode(Mode):
             bad_answers = ''
             for q,a in self.bad_answers.items():
                 # ', '.join(...) because key:value - tuples
-                bad_answers += '{} - {} -> {}\n'.format(
+                bad_answers += '{} - {} >> {}\n'.format(
                     ', '.join(q), 
                     a, 
                     ', '.join(self.qa_dict[q])
@@ -119,7 +120,7 @@ class DictMode(Mode):
         random.shuffle(questions)
     
         self.questions_i = iter(questions)
-        self.pattern = '{}\n\n-> {}'
+        self.pattern = '{}\n\n>> {}'
         self.length = len(questions)
         self.bad_answers = {}
  

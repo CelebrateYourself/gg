@@ -9,12 +9,24 @@ class View(ttk.Frame):
         super().__init__(root)
 
         self.widgets = {}
-        self.display = tk.StringVar()
         self.selected_mode = tk.StringVar()
         self.selected_resource = tk.StringVar()
         self.input_text = tk.StringVar()
 
         self._create_widgets()
+
+    @property
+    def display(self):
+        widget = self.widgets['display']
+        return widget.get(1.0, tk.END)
+
+    @display.setter
+    def display(self, text):
+        widget = self.widgets['display']
+        widget.config(state=tk.NORMAL)
+        widget.delete(1.0, tk.END)
+        widget.insert(tk.END, text)
+        widget.config(state=tk.DISABLED)
 
     def _create_widgets(self):
         frame = self.master
@@ -71,14 +83,16 @@ class View(ttk.Frame):
         )
         self.widgets['settings_button'] = settings_button
 
-        display = tk.Label(
+        display = tk.Text(
             frame,
-            anchor='nw',
+            #font=('Courier', 11),
             bg='#eee',
+            borderwidth=1,
             height=10,
-            justify='left',
-            textvariable=self.display,
-            wraplength=425,
+            padx=7,
+            pady=2,
+            width=1, # :D maybe, that width may be ~width of second column
+            wrap=tk.WORD,
         )
         display.grid(
             row=1,
@@ -92,8 +106,11 @@ class View(ttk.Frame):
 
         scrollbar = ttk.Scrollbar(
             frame,
-        ).grid(row=1, column=6, sticky='nes', pady=5)
+            command=display.yview,
+        )
+        scrollbar.grid(row=1, column=6, sticky='nes', pady=5)
         self.widgets['scrollbar'] = scrollbar
+        display.config(yscrollcommand=scrollbar.set)
 
         input_ = ttk.Entry(
             frame,
