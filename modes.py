@@ -3,6 +3,7 @@ import abc
 import os
 import random
 
+from setting import Setting
 
 modes = []
 
@@ -79,7 +80,15 @@ class DictMode(Mode):
 
     name = 'Словари'
     info = 'Напишите перевод слова:'
-    settings = {}
+    settings = {
+        'count': Setting(
+                    type='range',
+                    default=5,
+                    widget='range',
+                    from_=1,
+                    to=100,
+                 ),
+    }
 
     def on_answer(self, answer_text):
         current_question = self.question
@@ -115,13 +124,13 @@ class DictMode(Mode):
         # выбирается некоторое количество произвольных
         # позиций для тестирования. В дальнейшем, можно
         # сохранять только выбранные пары.
-        TEST_LENGTH = 10
-        questions = random.sample(self.qa_dict.keys(), TEST_LENGTH)
+        count = self.settings['count'].get()
+        questions = random.sample(self.qa_dict.keys(), count)
         random.shuffle(questions)
     
         self.questions_i = iter(questions)
         self.pattern = '{}\n\n>> {}'
-        self.length = len(questions)
+        self.length = count
         self.bad_answers = {}
  
         try:
@@ -161,3 +170,4 @@ class DictMode(Mode):
                     qa_dict[q_tuple] = a_tuple
 
         self.qa_dict = qa_dict
+
