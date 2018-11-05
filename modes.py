@@ -3,6 +3,7 @@ import abc
 import os
 import random
 
+from setting import Setting
 
 modes = []
 
@@ -16,7 +17,10 @@ class Mode(abc.ABC):
 
     info = 'Abstract mode text'
 
-    def __init__(self, *, window, resource_name, on_exit):
+    def __init__(self, *, window, resource_name, on_exit, settings=None):    
+        if settings:
+            self.settings = settings
+
         self._window = window
         self._on_exit = on_exit
         self._parse_resource(resource_name)
@@ -79,7 +83,21 @@ class DictMode(Mode):
 
     name = 'Словари'
     info = 'Напишите перевод слова:'
-    settings = {}
+    settings = {
+        'count': Setting(
+                    type='range',
+                    default=5,
+                    widget='range',
+                    from_=1,
+                    to=100,
+                    label='Количество слов',
+                 ),
+        'reverse': Setting(
+                       type='bool',
+                       default=False,
+                       widget='bool',
+                   ),
+    }
 
     def on_answer(self, answer_text):
         current_question = self.question
@@ -115,13 +133,13 @@ class DictMode(Mode):
         # выбирается некоторое количество произвольных
         # позиций для тестирования. В дальнейшем, можно
         # сохранять только выбранные пары.
-        TEST_LENGTH = 10
-        questions = random.sample(self.qa_dict.keys(), TEST_LENGTH)
+        count = self.settings['count']
+        questions = random.sample(self.qa_dict.keys(), count)
         random.shuffle(questions)
     
         self.questions_i = iter(questions)
         self.pattern = '{}\n\n>> {}'
-        self.length = len(questions)
+        self.length = count
         self.bad_answers = {}
  
         try:
