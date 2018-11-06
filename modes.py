@@ -157,6 +157,7 @@ class DictMode(Mode):
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
         qa_dict = {}
+        reverse = self.settings['reverse']
         with open(file_path, 'rt', encoding='utf8') as file:
             for string in file:
                 try:
@@ -177,7 +178,11 @@ class DictMode(Mode):
                 )
                 
                 if q_tuple and a_tuple:
-                    qa_dict[q_tuple] = a_tuple
+                    # simple dummy realisation
+                    if reverse:
+                        qa_dict[a_tuple] = q_tuple
+                    else:
+                        qa_dict[q_tuple] = a_tuple
 
         self.qa_dict = qa_dict
 
