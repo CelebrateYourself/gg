@@ -197,12 +197,21 @@ class TestMode(Mode):
     info = 'Выбирайте правильные ответы на вопросы из предложенного списка' \
            '(необходимо вводить числа, соответсвующие правильным ответам,' \
            'через пробел)'
-    settings = {}
+    settings = {
+        'count': Setting(
+            type='range',
+            default=5,
+            widget='range',
+            from_=4,
+            to=6,
+            label='Количество вопросов',
+        )
+    }
 
     def on_answer(self, answer_text):
-        self.display = ''
         ans = []
         answer_text = answer_text.strip()
+        err = False
         try:
             if len(answer_text) == 0:
                 raise ValueError()
@@ -212,7 +221,7 @@ class TestMode(Mode):
                     raise ValueError()
                 ans.append(self._cur_q_list[ind - 1])
         except ValueError:
-            self.display += 'Некоррекный индекс ответа\n'
+            err = True
         else:
             self._answers.append(ans)
             self._counter += 1
@@ -220,17 +229,18 @@ class TestMode(Mode):
                 self._display_result()
                 return
             self._cur_q_list = self._prepare_question()
-        self._display()
+        self._display_question()
+        if err:
+            self.display += '\nНекорректный индекс ответа'
 
     def launch(self):
-        test_length = 5  # todo sets
-        self._questions = random.sample(self._qa_list, test_length)
+        count = self.settings['count']
+        self._questions = random.sample(self._qa_list, count)
         random.shuffle(self._questions)
         self._counter = 0
         self._answers = []
         self._cur_q_list = self._prepare_question()
-        self.display = ''
-        self._display()
+        self._display_question()
 
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
@@ -269,20 +279,111 @@ class TestMode(Mode):
         random.shuffle(cur_ans)
         return cur_ans
 
-    def _display(self):
+    def _display_question(self):
         cur_q = self._questions[self._counter]
         d_str = cur_q[0]
         for i in range(len(self._cur_q_list)):
             d_str += '\n' + str(i + 1) + '. ' + self._cur_q_list[i]
-        self.display += d_str
+        self.display = d_str
 
     def _display_result(self):
         res_str = ''
         for i in range(len(self._questions)):
             q = self._questions[i]
-            cor_ans = set(q[1])
-            user_ans = set(self._answers[i])
-            res_str += '\n' + q[0] + '\n Правильные ответы: (' +\
-                       cor_ans.intersection(user_ans) +\
-                       '), не указанные правильные ответы: ()'
+            forgotten = []
+            for ans in q[1]:
+                if ans not in self._answers[i]:
+                    forgotten.append(ans)
+            excess = []
+            for ans in self._answers[i]:
+                if ans not in q[1]:
+                    excess.append(ans)
+            res_str += q[0]
+            res_str += '\nУказанные ответы: ' + ', '.join(self._answers[i])
+            if not len(forgotten) and not len(excess):
+                res_str += '\nВсе верно!'
+            if len(forgotten) != 0:
+                res_str += '\nЗабытые ответы: ' + ', '.join(forgotten)
+            if len(excess) != 0:
+                    res_str += '\nЛишние ответы: ' + ', '.join(excess)
+            if i < len(self._questions) - 1:
+                res_str += '\n\n'
         self._on_exit(res_str)
+
+
+@mode
+class GallowsMode(Mode):
+    """Gallows mode. Required data format:
+    word\nword ...\nword
+    """
+
+    name = 'Виселица'
+    info = 'Открывайте буквы, угадывая слово'
+    settings = {
+        'count': Setting(
+            type='range',
+            default=10,
+            widget='range',
+            from_=5,
+            to=20,
+            label='Количество открываемых букв',
+        )
+    }
+
+    def on_answer(self, answer_text):
+        answer_text = answer_text.upper()
+        err = ''
+        if len(answer_text) == 1:
+            if answer_text in 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ':
+                if self._countdown != 0:
+                    self._letters.add(answer_text)
+                    self._countdown -= 1
+                    if self._is_word_open():
+                        self._finish()
+                        return
+                else:
+                    err = 'Необходимо ввести слово'
+        else:
+            self._finish(answer_text)
+            return
+        self._print_word()
+        if err:
+            self.display += '\n\n' + err
+        str_mess = 'Введите слово'
+        if self._countdown != 0:
+            str_mess += ' или букву'
+        str_mess += ':'
+        self.display += '\n\n' + str_mess
+        if self._countdown != 0:
+            self.display += '\n\n' + 'Ходов осталось: ' + str(self._countdown)
+
+    def launch(self):
+        print(self._word)
+        self._countdown = self.settings['count']
+        self._letters = set()
+        self._print_word()  # todo test
+
+    def _parse_resource(self, resource_name):
+        file_path = os.path.join(self.path, resource_name)
+        with open(file_path, 'rt', encoding='utf8') as file:
+            words = [word for word in file]  # todo optimize
+            self._word = random.choice(words).upper()
+            self._word = self._word[0:-1]
+
+    def _print_word(self):
+        str_word = ''
+        for letter in self._word:
+            str_word += ' ' + (letter if letter in self._letters else '_') + ' '
+        self.display = str_word
+
+    def _is_word_open(self):
+        for letter in self._word:
+            if letter not in self._letters:
+                return False
+        return True
+
+    def _finish(self, ans=None):
+        if not ans or ans == self._word:
+            self.display = 'Вы угадали, это слово ' + self._word
+        else:
+            self.display = 'К сожалению Вы не угадали, это слово ' + self._word
