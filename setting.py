@@ -38,3 +38,6 @@ class Setting():
 
     def _validate_range(self, number):
         return number in range(self.from_, self.to+1) # 'to' include in range
+
+    def _validate_bool(self, flag):
+        return type(flag) is bool
