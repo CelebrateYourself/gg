@@ -1,4 +1,4 @@
-
+import re
 import abc
 import os
 import random
@@ -165,41 +165,57 @@ class DictMode(Mode):
 
 @mode
 class TestMode(Mode):
-    """Режим тестирования. Формат данных описан ниже, если не указаны неправильные ответы,
-    они берутся из правильных ответов на другие вопросы"""
-    RESOURCE_PATTERN = 'question = correct_answer_1(ca1) | ca2 | ... ca3 ?' \
-                       ' (optional) incorrect_answer_1(ia1) | ia2 | ... ia3'
-    INCORRECT_ANSWERS_MIN = 2  # Минимальное кол-во неправильных ответов, если они не заданы в файле
-    INCORRECT_ANSWERS_MAX = 5
+    """Test mode. Required data format:
+    question = correct_answer_1(ca1) | ca2 | ... ca3 ?
+    (optional) incorrect_answer_1(ia1) | ia2 | ... ia3
+    If no incorrect answers they are randomly selected from correct answers
+    to others questions
+    """
+
+    INCORRECT_ANSWERS_MIN = 2  # Minimum and ...
+    INCORRECT_ANSWERS_MAX = 5  # Maximum number of randomly selected incorrect answers (if need)
     name = 'Тесты'
-    info = 'Выбор правильных ответов на вопрос из предложенного списка (числа через пробел)'
+    info = 'Выбирайте правильные ответы на вопросы из предложенного списка' \
+           '(необходимо вводить числа, соответсвующие правильным ответам,' \
+           'через пробел)'
     settings = {}
 
-    def on_answer(self, answer_text):  # todo check errors
+    def on_answer(self, answer_text):
+        self.display = ''
         ans = []
-        for ind in answer_text.split(' '):
-            ans.append(self._cur_q_list[int(ind.strip()) - 1])
-        self._answers.append(ans)
-        self._counter += 1
-        if self._counter == len(self._questions):
-            self._display_result()
+        answer_text = answer_text.strip()
+        try:
+            if len(answer_text) == 0:
+                raise ValueError()
+            for ind in re.split('\s+', answer_text):
+                ind = int(ind.strip())
+                if ind < 1 or ind > len(self._cur_q_list):
+                    raise ValueError()
+                ans.append(self._cur_q_list[ind - 1])
+        except ValueError:
+            self.display += 'Некоррекный индекс ответа\n'
         else:
+            self._answers.append(ans)
+            self._counter += 1
+            if self._counter == len(self._questions):
+                self._display_result()
+                return
             self._cur_q_list = self._prepare_question()
-            self._display()
+        self._display()
 
     def launch(self):
-        print(self._qa_list)
-        test_length = 5
+        test_length = 5  # todo sets
         self._questions = random.sample(self._qa_list, test_length)
         random.shuffle(self._questions)
         self._counter = 0
         self._answers = []
         self._cur_q_list = self._prepare_question()
+        self.display = ''
         self._display()
 
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
-        qa_list = []  # [вопрос, [правильные ответы], [неправильные ответы]]
+        qa_list = []  # [question, [correct answers], [incorrect answers]]
         with open(file_path, 'rt', encoding='utf8') as file:
             for string in file:
                 try:
@@ -212,7 +228,7 @@ class TestMode(Mode):
                     qa_list.append([question.strip(), cas, ias])
                 except IOError:
                     continue
-        for q in qa_list:  # Если неправильные отверы не указаны, натаскать их из правильных на другие вопросы
+        for q in qa_list:  # If no incorrect answers
             if not len(q[2]):
                 i = 0
                 limit = random.randint(__class__.INCORRECT_ANSWERS_MIN,
@@ -239,12 +255,15 @@ class TestMode(Mode):
         d_str = cur_q[0]
         for i in range(len(self._cur_q_list)):
             d_str += '\n' + str(i + 1) + '. ' + self._cur_q_list[i]
-        self.display = d_str
+        self.display += d_str
 
     def _display_result(self):
         res_str = ''
         for i in range(len(self._questions)):
             q = self._questions[i]
-            res_str += '\n' + q[0] + ' (' + ', '.join(q[1]) + ') (' +\
-                       ', '.join(self._answers[i]) + ')\n'
+            cor_ans = set(q[1])
+            user_ans = set(self._answers[i])
+            res_str += '\n' + q[0] + '\n Правильные ответы: (' +\
+                       cor_ans.intersection(user_ans) +\
+                       '), не указанные правильные ответы: ()'
         self._on_exit(res_str)
