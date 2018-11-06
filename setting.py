@@ -4,14 +4,14 @@ class Setting():
 
     METH_PREFIX = '_validate_'
 
-    def __init__(self, *, type, default=None, widget='entry', **params):
+    def __init__(self, *, type, default, widget='entry', **params):
         self._value = None
         self.__dict__.update(params)
+        self.widget = widget
         self.type = type
         validator_name = '{}{}'.format(self.METH_PREFIX, self.type)
         self.validator = getattr(self, validator_name)
-        if default:
-            self.set(default)
+        self.set(default)
 
     def is_valid(self, value):
         return self.validator(value)
@@ -29,9 +29,9 @@ class Setting():
             )
             raise ValueError(
                 msg.format(
-                    value, 
-                    type(value), 
-                    self.type, 
+                    value,
+                    type(value),
+                    self.type,
                     str(self.__dict__)
                 )
             )

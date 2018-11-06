@@ -1,3 +1,4 @@
+
 import abc
 import os
 import random
@@ -17,7 +18,10 @@ class Mode(abc.ABC):
 
     info = 'Abstract mode text'
 
-    def __init__(self, *, window, resource_name, on_exit):
+    def __init__(self, *, window, resource_name, on_exit, settings=None):
+        if settings:
+            self.settings = settings
+
         self._window = window
         self._on_exit = on_exit
         self._parse_resource(resource_name)
@@ -87,7 +91,13 @@ class DictMode(Mode):
                     widget='range',
                     from_=1,
                     to=100,
+                    label='Количество слов',
                  ),
+        'reverse': Setting(
+                       type='bool',
+                       default=False,
+                       widget='bool',
+                   ),
     }
 
     def on_answer(self, answer_text):
@@ -124,7 +134,7 @@ class DictMode(Mode):
         # выбирается некоторое количество произвольных
         # позиций для тестирования. В дальнейшем, можно
         # сохранять только выбранные пары.
-        count = self.settings['count'].get()
+        count = self.settings['count']
         questions = random.sample(self.qa_dict.keys(), count)
         random.shuffle(questions)
     

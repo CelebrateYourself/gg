@@ -1,8 +1,9 @@
 
 import tkinter as tk
 import tkinter.ttk as ttk
-
 import tkinter.simpledialog as dialogs
+
+from functools import partial
 
 
 class View(ttk.Frame):
@@ -145,25 +146,130 @@ class View(ttk.Frame):
         self.master.mainloop()
 
 
-class SettingsDialog(dialogs.Dialog):
+class SettingsDialog:
 
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args)
-        self.settings = kwargs['settings']
+    def __init__(self, master, title, settings):
+        self.master = master
+        self.window = tk.Toplevel(master)
+        self.frame = ttk.Frame(self.window)
+        self.exit_frame = ttk.Frame(self.window)
+        self.window.title(title)
+        self.window.resizable(False, False)
+        self.settings = settings
+        self.variables = {}
+        self.result = {}
+
+        self.frame.grid(row=0, padx=5, pady=(5,0))
+        self.exit_frame.grid(row=1, pady=5, padx=5)
+
+        self.window.focus()
+        self.window.grab_set()
+
+        self.window.geometry(
+            "+{}+{}".format(
+                self.master.winfo_rootx()+50,
+                self.master.winfo_rooty()+50
+            )
+        )
+
         self._create_widgets()
+        self.window.wait_window(self.window)
 
-    def body(self, master):
-        self.result = None
+    def _on_apply(self):
+        results = {k:v.get() for k,v in self.variables.items()}
+        self.result.update(results)
+        self.variables.clear()
+        self.master.focus()
+        self.window.destroy()
 
-    def apply(self):
-        # on OK exit
-        pass
+    def _on_cancel(self):
+        self.variables.clear()
+        self.master.focus()
+        self.window.destroy()
 
     def _create_widgets(self):
-        print(self.settings)
-        # for line,setting in enumerate(settings)
-        # label = Label
-        # s_widget = self._widgets_factory(setting)
-        # label.grid(row=line, column=0)
-        # s_widget.grid(row=line, column=1)
+        frame = self.frame
+        exit_frame = self.exit_frame
 
+        ttk.Button(
+            exit_frame,
+            text='Ok',
+            command=self._on_apply,
+        ).grid(row=0, column=0, sticky='se', padx=(0,2))
+
+        ttk.Button(
+            exit_frame,
+            command=self._on_cancel,
+            text='Cancel',
+        ).grid(row=0, column=1, sticky='sw', padx=(2,0))
+
+        ######## Settings #########
+
+        settings = self.settings
+
+        for line,(key,setting) in enumerate(settings.items()):
+            label_text = (
+                setting.label 
+                if hasattr(setting, 'label') 
+                else key.lower().title()
+            )
+            ttk.Label(
+                frame,
+                text=label_text,
+            ).grid(row=line, column=0, sticky='ne', padx=(0,2), pady=2)
+
+            s_widget = self._widgets_factory(frame, key, setting)
+            s_widget.grid(row=line, column=1, sticky='nw', padx=(2,0), pady=2)
+
+    def _widgets_factory(self, frame, key, setting):
+        w_name = setting.widget
+        widget = None
+
+        if w_name == 'entry':  # Not tested
+            def validate(setting, var, *args):
+                text = var.get()
+                if not setting.is_valid(text):
+                    var.set(setting.get())
+
+            variable = tk.StringVar()
+            widget = ttk.Entry(
+                frame,
+                textvariable=variable,
+            )
+            widget.bind(
+                '<FocusOut>',
+                partial(validate, setting, variable)
+            )
+
+        elif w_name == 'bool':
+            variable = tk.BooleanVar()
+            widget = tk.Checkbutton(
+                frame,
+                variable=variable,
+            )
+
+        elif w_name == 'range':
+            variable = tk.IntVar()
+            widget = ttk.Frame(frame)
+            ttk.Scale(
+                widget, 
+                from_=setting.from_,
+                to=setting.to,
+                variable=variable,
+                command=partial(
+                    lambda var,val: var.set(int(float(val))),
+                    variable
+                )
+            ).pack()
+            ttk.Label(
+                widget,
+                textvariable=variable,
+            ).pack()
+
+        else:
+            msg = 'Widget name "{}" is not implemented'.format(setting.widget)
+            raise TypeError(msg)
+
+        variable.set(setting.get())
+        self.variables[key] = variable
+        return widget

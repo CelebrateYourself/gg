@@ -39,7 +39,9 @@ class GallowsGame:
         self.window.master.resizable(False, False)
 
         self.current_mode = None
+        self.current_settings = None
         self.current_task = None
+
         self._set_init_state()
         self._bind_events()
 
@@ -68,7 +70,7 @@ class GallowsGame:
         input_text.trace_variable('w', self._on_key_press)
         input_ = window.widgets['input']
         input_.bind('<Return>', self._input_send)
-        # Run button
+        # Run Button
         run_button = window.widgets['run_button']
         run_button.bind('<Return>', self._run_task)
         run_button.config(command=self._run_task)
@@ -129,6 +131,8 @@ class GallowsGame:
         mode = self.current_mode
         title = 'Settings | {}'.format(mode.get_name())
         dialog = SettingsDialog(frame, title, settings=mode.settings)
+        if dialog.result:
+            self.current_settings = dialog.result
 
     def _resource_select(self, event=None):
         window = self.window
@@ -140,11 +144,20 @@ class GallowsGame:
         mode_cls = self.current_mode
         window = self.window
         resource_name = window.selected_resource.get()
+        settings = None
+
+        if self.current_settings:
+            settings = self.current_settings
+        elif hasattr(mode_cls, 'settings') and mode_cls.settings:
+            settings = {
+                k:v.get() for k,v in mode_cls.settings.items()
+            }
 
         task = mode_cls(
             # Because display now is a property object in window
             window=self.window,
             resource_name=resource_name,
+            settings=settings,
             on_exit=self._show_results
         )
         self.current_task = task
@@ -161,6 +174,7 @@ class GallowsGame:
         self.window.display = result_text
         self._set_init_state()
         self.current_mode = None
+        self.current_settings = None
         self.current_task = None
 
 
