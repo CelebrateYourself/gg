@@ -2,6 +2,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
+import tkinter.simpledialog as dialogs
+
 
 class View(ttk.Frame):
 
@@ -141,3 +143,27 @@ class View(ttk.Frame):
 
     def launch(self):
         self.master.mainloop()
+
+
+class SettingsDialog(dialogs.Dialog):
+
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args)
+        self.settings = kwargs['settings']
+        self._create_widgets()
+
+    def body(self, master):
+        self.result = None
+
+    def apply(self):
+        # on OK exit
+        pass
+
+    def _create_widgets(self):
+        print(self.settings)
+        # for line,setting in enumerate(settings)
+        # label = Label
+        # s_widget = self._widgets_factory(setting)
+        # label.grid(row=line, column=0)
+        # s_widget.grid(row=line, column=1)
+
