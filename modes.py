@@ -284,7 +284,7 @@ class TestMode(Mode):
         random.shuffle(cur_ans)
         return cur_ans
 
-    def _display_question(self):
+    def _display(self):
         cur_q = self._questions[self._counter]
         d_str = cur_q[0]
         for i in range(len(self._cur_q_list)):
