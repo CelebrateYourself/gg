@@ -202,6 +202,7 @@ class TestMode(Mode):
     info = 'Выбирайте правильные ответы на вопросы из предложенного списка' \
            '(необходимо вводить числа, соответсвующие правильным ответам,' \
            'через пробел)'
+
     settings = {
         'count': Setting(
             type='range',
@@ -217,6 +218,7 @@ class TestMode(Mode):
         ans = []
         answer_text = answer_text.strip()
         err = False
+
         try:
             if len(answer_text) == 0:
                 raise ValueError()
@@ -234,6 +236,7 @@ class TestMode(Mode):
                 self._display_result()
                 return
             self._cur_q_list = self._prepare_question()
+
         self._display_question()
         if err:
             self.display += '\nНекорректный индекс ответа'
@@ -284,12 +287,12 @@ class TestMode(Mode):
         random.shuffle(cur_ans)
         return cur_ans
 
-    def _display(self):
+    def _display_question(self):
         cur_q = self._questions[self._counter]
         d_str = cur_q[0]
         for i in range(len(self._cur_q_list)):
             d_str += '\n' + str(i + 1) + '. ' + self._cur_q_list[i]
-        self.display = d_str
+        self.display += d_str
 
     def _display_result(self):
         res_str = ''
@@ -313,6 +316,7 @@ class TestMode(Mode):
                     res_str += '\nЛишние ответы: ' + ', '.join(excess)
             if i < len(self._questions) - 1:
                 res_str += '\n\n'
+
         self._on_exit(res_str)
 
 
