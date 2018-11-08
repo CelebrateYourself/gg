@@ -197,7 +197,7 @@ class TestMode(Mode):
     """
 
     INCORRECT_ANSWERS_MIN = 2  # Minimum and ...
-    INCORRECT_ANSWERS_MAX = 5  # Maximum number of randomly selected incorrect answers (if need)
+    INCORRECT_ANSWERS_MAX = 5  # Maximum number of randomly selected incorrect answers (if needed)
     name = 'Тесты'
     info = 'Выбирайте правильные ответы на вопросы из предложенного списка' \
            '(необходимо вводить числа, соответсвующие правильным ответам,' \
@@ -209,50 +209,48 @@ class TestMode(Mode):
             default=5,
             widget='range',
             from_=4,
-            to=6,
+            to=6,  # too short data file
             label='Количество вопросов',
         )
     }
 
     def on_answer(self, answer_text):
-        ans = []
+        cur_answers = []
         answer_text = answer_text.strip()
-        err = False
-
+        error = False
         try:
             if len(answer_text) == 0:
                 raise ValueError()
-            for ind in re.split('\s+', answer_text):
-                ind = int(ind.strip())
-                if ind < 1 or ind > len(self._cur_q_list):
+            for index in re.split('\s+', answer_text):
+                index = int(index.strip())
+                if index < 1 or index > len(self._cur_answer_list):
                     raise ValueError()
-                ans.append(self._cur_q_list[ind - 1])
+                cur_answers.append(self._cur_answer_list[index - 1])
         except ValueError:
-            err = True
+            error = True
         else:
-            self._answers.append(ans)
+            self._answers.append(cur_answers)
             self._counter += 1
-            if self._counter == len(self._questions):
+            if self._counter == len(self._data):
                 self._display_result()
                 return
-            self._cur_q_list = self._prepare_question()
-
+            self._cur_answer_list = self._prepare_question()
         self._display_question()
-        if err:
+        if error:
             self.display += '\nНекорректный индекс ответа'
 
     def launch(self):
         count = self.settings['count']
-        self._questions = random.sample(self._qa_list, count)
-        random.shuffle(self._questions)
+        self._data = random.sample(self._parsed_data, count)
+        random.shuffle(self._data)
         self._counter = 0
         self._answers = []
-        self._cur_q_list = self._prepare_question()
+        self._cur_answer_list = self._prepare_question()
         self._display_question()
 
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
-        qa_list = []  # [question, [correct answers], [incorrect answers]]
+        parsed_data = []  # [question, [correct answers], [incorrect answers]]
         with open(file_path, 'rt', encoding='utf8') as file:
             for string in file:
                 try:
@@ -262,62 +260,62 @@ class TestMode(Mode):
                     ias = []
                     if len(answers) > 1:
                         ias = [ans.strip() for ans in answers[1].split('|')]
-                    qa_list.append([question.strip(), cas, ias])
+                        parsed_data.append([question.strip(), cas, ias])
                 except IOError:
                     continue
-        for q in qa_list:  # If no incorrect answers
-            if not len(q[2]):
+        for row in parsed_data:  # If no incorrect answers
+            if not len(row[2]):
                 i = 0
                 limit = random.randint(__class__.INCORRECT_ANSWERS_MIN,
                                        __class__.INCORRECT_ANSWERS_MAX)
                 while i < limit:
-                    rand_q = random.choice(qa_list)
-                    if rand_q[0] == q[0]:
+                    rand_row = random.choice(parsed_data)
+                    if rand_row[0] == row[0]:
                         continue  # not very good
-                    rand_ans = random.choice(rand_q[1])
-                    if rand_ans in q[1]:
+                    rand_correct_answers = random.choice(rand_row[1])
+                    if rand_correct_answers in row[1]\
+                            or rand_correct_answers in row[2]:
                         continue  # not very good too
-                    q[2].append(rand_ans)
+                    row[2].append(rand_correct_answers)
                     i += 1
-        self._qa_list = qa_list
+        self._parsed_data = parsed_data
 
     def _prepare_question(self):
-        cur_q = self._questions[self._counter]
-        cur_ans = list(cur_q[1]) + list(cur_q[2])
-        random.shuffle(cur_ans)
-        return cur_ans
+        cur_row = self._data[self._counter]
+        cur_answers = list(cur_row[1]) + list(cur_row[2])
+        random.shuffle(cur_answers)
+        return cur_answers
 
     def _display_question(self):
-        cur_q = self._questions[self._counter]
-        d_str = cur_q[0]
-        for i in range(len(self._cur_q_list)):
-            d_str += '\n' + str(i + 1) + '. ' + self._cur_q_list[i]
-        self.display += d_str
+        cur_row = self._data[self._counter]
+        message = cur_row[0]
+        for i in range(len(self._cur_answer_list)):
+            message += '\n' + str(i + 1) + '. ' + self._cur_answer_list[i]
+        self.display = message
 
     def _display_result(self):
-        res_str = ''
-        for i in range(len(self._questions)):
-            q = self._questions[i]
+        result_str = 'Результаты:\n\n'
+        for i in range(len(self._data)):
+            row = self._data[i]
             forgotten = []
-            for ans in q[1]:
-                if ans not in self._answers[i]:
-                    forgotten.append(ans)
+            for answer in row[1]:
+                if answer not in self._answers[i]:
+                    forgotten.append(answer)
             excess = []
-            for ans in self._answers[i]:
-                if ans not in q[1]:
-                    excess.append(ans)
-            res_str += q[0]
-            res_str += '\nУказанные ответы: ' + ', '.join(self._answers[i])
+            for answer in self._answers[i]:
+                if answer not in row[1]:
+                    excess.append(answer)
+            result_str += row[0]
+            result_str += '\nУказанные ответы: ' + ', '.join(self._answers[i])
             if not len(forgotten) and not len(excess):
-                res_str += '\nВсе верно!'
+                result_str += '\nВсе верно!'
             if len(forgotten) != 0:
-                res_str += '\nЗабытые ответы: ' + ', '.join(forgotten)
+                result_str += '\nЗабытые ответы: ' + ', '.join(forgotten)
             if len(excess) != 0:
-                    res_str += '\nЛишние ответы: ' + ', '.join(excess)
-            if i < len(self._questions) - 1:
-                res_str += '\n\n'
-
-        self._on_exit(res_str)
+                result_str += '\nЛишние ответы: ' + ', '.join(excess)
+            if i < len(self._data) - 1:
+                result_str += '\n\n'
+        self._on_exit(result_str)
 
 
 @mode
@@ -327,7 +325,7 @@ class GallowsMode(Mode):
     """
 
     name = 'Виселица'
-    info = 'Открывайте буквы, угадывая слово'
+    info = 'Угадайте слово, открывая буквы'
     settings = {
         'count': Setting(
             type='range',
@@ -335,15 +333,15 @@ class GallowsMode(Mode):
             widget='range',
             from_=5,
             to=20,
-            label='Количество открываемых букв',
+            label='Количество попыток открыть букву',
         )
     }
 
     def on_answer(self, answer_text):
         answer_text = answer_text.upper()
-        err = ''
+        error = ''
         if len(answer_text) == 1:
-            if answer_text in 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ':
+            if answer_text in 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ-':
                 if self._countdown != 0:
                     self._letters.add(answer_text)
                     self._countdown -= 1
@@ -351,33 +349,50 @@ class GallowsMode(Mode):
                         self._finish()
                         return
                 else:
-                    err = 'Необходимо ввести слово'
+                    error = 'Необходимо ввести слово'
         else:
             self._finish(answer_text)
             return
         self._print_word()
-        if err:
-            self.display += '\n\n' + err
-        str_mess = 'Введите слово'
+        if error:
+            self.display += '\n\n' + error
+        message = 'Введите слово'
         if self._countdown != 0:
-            str_mess += ' или букву'
-        str_mess += ':'
-        self.display += '\n\n' + str_mess
+            message += ' или букву'
+        message += ':'
+        self.display += '\n\n' + message
         if self._countdown != 0:
             self.display += '\n\n' + 'Ходов осталось: ' + str(self._countdown)
 
     def launch(self):
-        print(self._word)
         self._countdown = self.settings['count']
         self._letters = set()
-        self._print_word()  # todo test
+        self._print_word()
+        self.display += '\n\nВведите слово или букву:'
 
     def _parse_resource(self, resource_name):
         file_path = os.path.join(self.path, resource_name)
-        with open(file_path, 'rt', encoding='utf8') as file:
-            words = [word for word in file]  # todo optimize
-            self._word = random.choice(words).upper()
-            self._word = self._word[0:-1]
+
+        with open(file_path, 'rb') as f_handle:
+            f_handle.seek(0, os.SEEK_END)
+            size = f_handle.tell()
+            i = random.randint(0, size)
+            chunk_size = 5
+            while True:
+                i -= chunk_size
+                if i < 0:
+                    chunk_size += i
+                    i = 0
+                f_handle.seek(i, os.SEEK_SET)
+                chunk = f_handle.read(chunk_size)
+                i_newline = chunk.rfind(b'\n')
+                if i_newline != -1:
+                    i += i_newline + 1
+                    break
+                if i == 0:
+                    break
+            f_handle.seek(i, os.SEEK_SET)
+            self._word = f_handle.readline().decode('utf-8').strip().upper()
 
     def _print_word(self):
         str_word = ''
@@ -391,8 +406,8 @@ class GallowsMode(Mode):
                 return False
         return True
 
-    def _finish(self, ans=None):
-        if not ans or ans == self._word:
-            self.display = 'Вы угадали, это слово ' + self._word
+    def _finish(self, answer=None):
+        if not answer or answer == self._word:
+            self._on_exit('Вы угадали, это слово ' + self._word)
         else:
-            self.display = 'К сожалению Вы не угадали, это слово ' + self._word
+            self._on_exit('К сожалению Вы не угадали, это слово ' + self._word)
