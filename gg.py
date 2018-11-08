@@ -26,6 +26,11 @@ from view import SettingsDialog, View
 
 class GallowsGame:
 
+    INIT = 1
+    MODE = 2
+    RESOURCE = 3
+    TASK = 4
+
     title = 'Gallows Game'
     info = TEST_INFO #'Start programm text'
     chars_limit = 50
@@ -38,11 +43,7 @@ class GallowsGame:
         self.window.master.title(self.title)
         self.window.master.resizable(False, False)
 
-        self.current_mode = None
-        self.current_settings = None
-        self.current_task = None
-
-        self._set_init_state()
+        self._set_state(self.INIT)
         self._bind_events()
 
     def launch(self):
@@ -70,23 +71,66 @@ class GallowsGame:
         input_text.trace_variable('w', self._on_key_press)
         input_ = window.widgets['input']
         input_.bind('<Return>', self._input_send)
+        # Reset Button
+        reset_button = window.widgets['reset_button']
+        reset_button.bind('<Return>', self._reset)
+        reset_button.config(command=self._reset)
         # Run Button
         run_button = window.widgets['run_button']
         run_button.bind('<Return>', self._run_task)
         run_button.config(command=self._run_task)
 
-    def _set_init_state(self):
+    def _set_state(self, state):
         window = self.window
         widgets = window.widgets
 
-        window.selected_mode.set('')
-        window.selected_resource.set('')
+        if state == self.INIT:
+            self.current_mode = None
+            self.current_settings = None
+            self.current_task = None
 
-        widgets['input'].config(state=tk.DISABLED)
-        widgets['resources'].config(state=tk.DISABLED)
-        widgets['run_button'].config(state=tk.DISABLED)
-        widgets['settings_button'].config(state=tk.DISABLED)
-        widgets['modes'].focus()
+            window.selected_mode.set('')
+            window.selected_resource.set('')
+
+            widgets['modes'].config(state='readonly')
+            widgets['resources'].config(state=tk.DISABLED)
+            widgets['settings_button'].config(state=tk.DISABLED)
+            widgets['run_button'].config(state=tk.DISABLED)
+            widgets['input'].config(state=tk.DISABLED)
+            widgets['modes'].focus()
+
+        elif state == self.MODE:
+            mode = self.current_mode
+
+            self.current_settings = None
+            self.current_task = None
+
+            window.selected_resource.set('')
+
+            widgets['modes'].config(state='readonly')
+            widgets['resources'].config(state='readonly')
+            if hasattr(mode, 'settings') and mode.settings:
+                widgets['settings_button'].config(state=tk.NORMAL)
+            else:
+                widgets['settings_button'].config(state=tk.DISABLED)
+            widgets['run_button'].config(state=tk.DISABLED)
+            widgets['input'].config(state=tk.DISABLED)
+            widgets['resources'].focus()
+
+        elif state == self.RESOURCE:
+            widgets['run_button'].config(state=tk.NORMAL)
+            widgets['run_button'].focus()
+
+        elif state == self.TASK:
+            widgets['modes'].config(state=tk.DISABLED)
+            widgets['resources'].config(state=tk.DISABLED)
+            widgets['settings_button'].config(state=tk.DISABLED)
+            widgets['run_button'].config(state=tk.DISABLED)
+            widgets['input'].config(state=tk.NORMAL)
+            widgets['input'].focus()
+
+        else:
+            raise ValueError()
 
     ####### Actions ########
     def _input_send(self, event=None):
@@ -100,7 +144,6 @@ class GallowsGame:
 
     def _mode_select(self, event=None):
         window = self.window
-
         mode_name = window.selected_mode.get()
         mode_cls = self.modes[mode_name]
         self.current_mode = mode_cls
@@ -109,15 +152,9 @@ class GallowsGame:
         res_names = mode_cls.get_resources_names()
 
         resources_box = window.widgets['resources']
-        resources_box.config(
-            state='readonly',
-            values=res_names,
-        )
-        resources_box.focus()
-        
-        if hasattr(mode_cls, 'settings') and mode_cls.settings:
-            settings_button = window.widgets['settings_button']
-            settings_button.config(state=tk.NORMAL)
+        resources_box.config(values=res_names)
+
+        self._set_state(self.MODE)
 
     def _on_key_press(self, *args):
         limit = self.chars_limit
@@ -134,11 +171,12 @@ class GallowsGame:
         if dialog.result:
             self.current_settings = dialog.result
 
+    def _reset(self, event=None):
+        self._set_state(self.INIT)
+        self.window.display = self.info
+
     def _resource_select(self, event=None):
-        window = self.window
-        run_button = window.widgets['run_button']
-        run_button.config(state=tk.NORMAL)
-        run_button.focus()
+        self._set_state(self.RESOURCE)
 
     def _run_task(self, event=None):
         mode_cls = self.current_mode
@@ -162,20 +200,12 @@ class GallowsGame:
         )
         self.current_task = task
 
-        self._set_init_state()
-
-        input_ = window.widgets['input']
-        input_.config(state=tk.NORMAL)
-        input_.focus()
-
+        self._set_state(self.TASK)
         task.launch()
 
     def _show_results(self, result_text=''):
         self.window.display = result_text
-        self._set_init_state()
-        self.current_mode = None
-        self.current_settings = None
-        self.current_task = None
+        self._set_state(self.INIT)
 
 
 if __name__ == '__main__':

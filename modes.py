@@ -218,6 +218,7 @@ class TestMode(Mode):
         cur_answers = []
         answer_text = answer_text.strip()
         error = False
+
         try:
             if len(answer_text) == 0:
                 raise ValueError()
@@ -234,7 +235,9 @@ class TestMode(Mode):
             if self._counter == len(self._data):
                 self._display_result()
                 return
+  
             self._cur_answer_list = self._prepare_question()
+  
         self._display_question()
         if error:
             self.display += '\nНекорректный индекс ответа'
@@ -326,6 +329,7 @@ class GallowsMode(Mode):
 
     name = 'Виселица'
     info = 'Угадайте слово, открывая буквы'
+
     settings = {
         'count': Setting(
             type='range',
