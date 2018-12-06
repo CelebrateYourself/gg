@@ -1,4 +1,4 @@
-"""Contains all available modes and abc Mode"""
+""" Contains all available modes and abc Mode """
 import abc
 import os
 import random
@@ -160,12 +160,14 @@ class DictMode(Mode):
 
     def launch(self):
         count = self.settings['count']
-        questions = random.sample(self.qa_dict.keys(), count)
+        all_questions = self.qa_dict.keys()
+        length = min(len(all_questions), count)
+        questions = random.sample(all_questions, length)
         random.shuffle(questions)
     
         self.questions_i = iter(questions)
         self.pattern = '{}\n\n>> {}'
-        self.length = count
+        self.length = length
         self.bad_answers = {}
  
         try:

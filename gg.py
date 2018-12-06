@@ -1,21 +1,18 @@
-TEST_INFO = (
-'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed '
-'aliquam gravida augue, vel luctus risus accumsan in. Ut '
-'efficitur et lacus eget feugiat. Donec eu ipsum turpis. '
-'Praesent a diam sed lacus congue rhoncus sed eget nisi. '
-'Mauris tempor tempus lorem, ac luctus sem rutrum id. '
-'Duis auctor cursus fringilla. Sed interdum neque vitae '
-'tellus lacinia hendrerit. Duis est libero, pulvinar vitae '
-'hendrerit in, cursus a augue. Integer iaculis, nisi at '
-'bibendum facilisis, tellus elit aliquam mi, id volutpat sem '
-'lectus quis risus. Sed in dui id quam bibendum hendrerit. '
-'Sed efficitur erat et ultrices mattis. Ut ultricies dolor '
-'nec risus lobortis, sit amet varius est volutpat. Suspendisse '
-'sodales ligula efficitur commodo tincidunt. Sed dictum velit '
-'quis lectus elementum pretium. Integer scelerisque, urna in '
-'elementum luctus, urna massa molestie tellus, non molestie '
-'metus metus sit amet enim.'
-)
+INFO = """Welcome to GallowsGame.
+
+The application allows you to create and solve
+simple tasks with text of the form of question-
+answer, like guessing words, tests, translating
+word and more.
+
+You can use existing modes and resources for them,
+or create your own. 
+
+To continue, select the mode you need in the Mode
+list. Then, select the resource in the list of 
+resources. If possible, configure the settings 
+(Setting button) and press Run button for start.
+"""
 
 import os
 import tkinter as tk
@@ -26,16 +23,18 @@ from view import SettingsDialog, View
 
 class GallowsGame:
 
-    INIT = 1
-    MODE = 2
-    RESOURCE = 3
-    TASK = 4
+    INIT = 'init'
+    MODE = 'mode'
+    RESOURCE = 'resource'
+    TASK = 'task'
 
     title = 'Gallows Game'
-    info = TEST_INFO #'Start programm text'
+    info = INFO #'Start programm text'
     chars_limit = 50
 
     def __init__(self):
+        
+        # dict of pairs 'mode_name': ModeClass
         self.modes = {
             mode.get_name():mode for mode in modes
         }
@@ -47,6 +46,12 @@ class GallowsGame:
         self._bind_events()
 
     def launch(self):
+        """ launch app 
+        
+        Load mode names into the Mode widget,
+        display app info and launch Tk mainloop
+        
+        """
         modes_names = list(self.modes.keys())
         modes_combobox = self.window.widgets['modes']
         modes_combobox.config(values=modes_names)

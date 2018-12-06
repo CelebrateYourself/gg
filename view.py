@@ -1,4 +1,3 @@
-
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.simpledialog as dialogs
@@ -7,6 +6,16 @@ from functools import partial
 
 
 class View(ttk.Frame):
+    """ GG app main window
+    
+    Class variables:   
+    - display: const property 
+      : provides a simple Text widget interface (get/set text)
+    
+    - launch() -> None
+      : launch Tk mainloop
+    
+    """
 
     def __init__(self, root):
         super().__init__(root)
@@ -88,13 +97,13 @@ class View(ttk.Frame):
 
         display = tk.Text(
             frame,
-            #font=('Courier', 11),
+            # font=('Courier', 11),
             bg='#eee',
             borderwidth=1,
             height=10,
             padx=7,
             pady=2,
-            width=1, # :D maybe, that width may be ~width of second column
+            width=1, # :D maybe, that width must be ~width of second column
             wrap=tk.WORD,
         )
         display.grid(
@@ -147,6 +156,7 @@ class View(ttk.Frame):
 
 
 class SettingsDialog:
+    """ Mode settings dialog """
 
     def __init__(self, master, title, settings):
         self.master = master
