@@ -4,7 +4,7 @@ import os
 import random
 import re
 
-from setting import Setting
+from .setting import Setting
 
 #  List of modes, available to run in the program
 modes = []

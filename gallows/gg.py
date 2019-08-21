@@ -17,8 +17,8 @@ resources. If possible, configure the settings
 import os
 import tkinter as tk
 
-from modes import modes
-from view import SettingsDialog, View
+from .modes import modes
+from .view import SettingsDialog, View
 
 
 class GallowsGame:
@@ -210,7 +210,3 @@ class GallowsGame:
     def _show_results(self, result_text=''):
         self.window.display = result_text
         self._set_state(self.INIT)
-
-
-if __name__ == '__main__':
-    GallowsGame().launch()
