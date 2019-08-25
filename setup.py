@@ -13,4 +13,5 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/CelebrateYourself/gg",
     packages=find_packages(),
+    include_package_data=True,
 )
